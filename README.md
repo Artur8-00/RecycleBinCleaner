@@ -20,8 +20,6 @@ You can download the latest release from the [GitHub Releases page](https://gith
 This program's executable has been scanned and verified as safe by VirusTotal:  
 [View VirusTotal report](https://www.virustotal.com/gui/file/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855)
 
-*(Replace `<your-file-hash>` with the actual SHA256 or MD5 hash of your executable)*
-
 ## Usage  
 Run the program, and it will place an icon in the system tray.  
 Right-click the icon to access options.
