@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw
 APP_NAME = "RecycleBinCleaner"
 SETTINGS_PATH = os.path.join(os.getenv("APPDATA"), APP_NAME, "settings.json")
 
-# --- Работа с настройками ---
+
 def load_settings():
     default = {
         "autostart": True,
@@ -53,10 +53,10 @@ def add_to_startup(enable):
     except Exception as e:
         print(f"Failed to modify startup: {e}")
 
-# Применяем автозапуск при старте
+
 add_to_startup(settings.get("autostart", True))
 
-# --- Создание иконок для трея ---
+
 def create_image(color_bg, color_fg):
     image = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
     dc = ImageDraw.Draw(image)
@@ -64,7 +64,7 @@ def create_image(color_bg, color_fg):
     dc.text((22, 14), 'R', fill=color_fg)
     return image
 
-# --- Функции трея ---
+
 def empty_recycle_bin(icon, item):
     SHEmptyRecycleBin = ctypes.windll.shell32.SHEmptyRecycleBinW
     SHEmptyRecycleBin(None, None, 0x00000001 | 0x00000002 | 0x00000004)
@@ -83,7 +83,7 @@ def show_about(icon, item):
         root.destroy()
     threading.Thread(target=show).start()
 
-# --- Окно настроек ---
+
 class SettingsWindow:
     def __init__(self, icon_wrapper):
         self.root = None
@@ -148,7 +148,7 @@ class SettingsWindow:
     def on_close(self):
         self.root.withdraw()
 
-# --- Управление tray-иконкой ---
+
 class TrayIcon:
     def __init__(self):
         self.icon = None
