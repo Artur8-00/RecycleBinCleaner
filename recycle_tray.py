@@ -8,6 +8,7 @@ import json
 import tkinter.messagebox
 import winreg
 import time
+import requests
 
 import customtkinter as ctk
 from pystray import Icon, MenuItem, Menu
@@ -15,13 +16,14 @@ from PIL import Image, ImageDraw
 
 APP_NAME = "RecycleBinCleaner"
 SETTINGS_PATH = os.path.join(os.getenv("APPDATA"), APP_NAME, "settings.json")
-
+CURRENT_VERSION = "1.0"
 
 def load_settings():
     default = {
         "autostart": True,
         "sound": True,
-        "theme": "light"
+        "theme": "light",
+        "check_updates": True
     }
     try:
         with open(SETTINGS_PATH, "r") as f:
@@ -53,9 +55,7 @@ def add_to_startup(enable):
     except Exception as e:
         print(f"Failed to modify startup: {e}")
 
-
 add_to_startup(settings.get("autostart", True))
-
 
 def create_image(color_bg, color_fg):
     image = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
@@ -63,7 +63,6 @@ def create_image(color_bg, color_fg):
     dc.ellipse((4, 4, 60, 60), fill=color_bg)
     dc.text((22, 14), 'R', fill=color_fg)
     return image
-
 
 def empty_recycle_bin(icon, item):
     SHEmptyRecycleBin = ctypes.windll.shell32.SHEmptyRecycleBinW
@@ -83,6 +82,66 @@ def show_about(icon, item):
         root.destroy()
     threading.Thread(target=show).start()
 
+class UpdateWindow:
+    def __init__(self, latest_version, download_url):
+        self.latest_version = latest_version
+        self.download_url = download_url
+        self.root = None
+
+    def show(self):
+        ctk.set_appearance_mode(settings.get("theme", "light"))
+        self.root = ctk.CTk()
+        self.root.title("Update Available")
+        self.root.geometry("400x180")
+        self.root.resizable(False, False)
+
+        frame = ctk.CTkFrame(self.root, corner_radius=10)
+        frame.pack(padx=20, pady=20, fill="both", expand=True)
+
+        label = ctk.CTkLabel(frame, text=f"New version {self.latest_version} is available!", font=ctk.CTkFont(size=16, weight="bold"))
+        label.pack(pady=(0,10))
+
+        desc = ctk.CTkLabel(frame, text="Do you want to open the download page to update?", wraplength=360)
+        desc.pack(pady=(0,20))
+
+        btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        btn_frame.pack(fill="x", pady=(0,10))
+
+        def on_ok():
+            import webbrowser
+            webbrowser.open(self.download_url)
+            self.root.destroy()
+
+        def on_cancel():
+            self.root.destroy()
+
+        btn_ok = ctk.CTkButton(btn_frame, text="OK", width=80, command=on_ok)
+        btn_ok.pack(side="left", padx=(0,10))
+
+        btn_cancel = ctk.CTkButton(btn_frame, text="Cancel", width=80, command=on_cancel)
+        btn_cancel.pack(side="left")
+
+        self.root.mainloop()
+
+def check_for_updates(show_window_if_update=True):
+    if not settings.get("check_updates", True):
+        return
+    try:
+        url = "https://api.github.com/repos/Artur8-00/RecycleBinCleaner/releases/latest"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            latest_version = data["tag_name"].lstrip("v")
+            download_url = data["assets"][0]["browser_download_url"] if data["assets"] else data["html_url"]
+            if latest_version > CURRENT_VERSION:
+                if show_window_if_update:
+                    update_win = UpdateWindow(latest_version, download_url)
+                    update_win.show()
+                else:
+                    
+                    pass
+    except Exception as e:
+        print(f"Update check failed: {e}")
 
 class SettingsWindow:
     def __init__(self, icon_wrapper):
@@ -97,33 +156,50 @@ class SettingsWindow:
             return
         if not self.opening_lock.acquire(blocking=False):
             return
-
         try:
             ctk.set_appearance_mode(settings.get("theme", "light"))
             self.root = ctk.CTk()
             self.root.title("Settings")
-            self.root.geometry("350x320")
+            self.root.geometry("360x360")
             self.root.resizable(False, False)
 
             self.autostart_var = ctk.BooleanVar(value=settings.get("autostart", True))
             self.sound_var = ctk.BooleanVar(value=settings.get("sound", True))
             self.theme_var = ctk.StringVar(value=settings.get("theme", "light"))
+            self.check_updates_var = ctk.BooleanVar(value=settings.get("check_updates", True))
 
-            ctk.CTkLabel(self.root, text="Autostart with Windows").pack(anchor="w", padx=20, pady=(20,5))
-            ctk.CTkCheckBox(self.root, variable=self.autostart_var).pack(anchor="w", padx=40)
+            def make_checkbox_row(parent, label_text, var):
+                frame = ctk.CTkFrame(parent, fg_color="transparent")
+                frame.pack(fill="x", padx=20, pady=8)
+                lbl = ctk.CTkLabel(frame, text=label_text)
+                lbl.pack(side="left")
+                on_off = ctk.CTkLabel(frame, text="ON" if var.get() else "OFF", width=40, anchor="e")
+                on_off.pack(side="right")
+                def on_var_change(*args):
+                    on_off.configure(text="ON" if var.get() else "OFF")
+                var.trace_add("write", on_var_change)
+                cbox = ctk.CTkCheckBox(frame, variable=var, text="")
+                cbox.pack(side="right", padx=5)
+                return frame
 
-            ctk.CTkLabel(self.root, text="Sound on Empty Recycle Bin").pack(anchor="w", padx=20, pady=5)
-            ctk.CTkCheckBox(self.root, variable=self.sound_var).pack(anchor="w", padx=40)
+            self.autostart_row = make_checkbox_row(self.root, "Autostart with Windows", self.autostart_var)
+            self.sound_row = make_checkbox_row(self.root, "Sound on Empty Recycle Bin", self.sound_var)
+            self.check_updates_row = make_checkbox_row(self.root, "Check for updates automatically", self.check_updates_var)
 
-            ctk.CTkLabel(self.root, text="Theme").pack(anchor="w", padx=20, pady=5)
+            ctk.CTkLabel(self.root, text="Theme").pack(anchor="w", padx=20, pady=(15,5))
             ctk.CTkRadioButton(self.root, text="Light", variable=self.theme_var, value="light").pack(anchor="w", padx=40)
             ctk.CTkRadioButton(self.root, text="Dark", variable=self.theme_var, value="dark").pack(anchor="w", padx=40)
 
-            ctk.CTkButton(self.root, text="Restore Defaults", command=self.restore_defaults).pack(pady=(10, 5))
-            ctk.CTkButton(self.root, text="Save Settings", command=self.save).pack(pady=(5, 20))
+            btn_check = ctk.CTkButton(self.root, text="Check for updates now", command=self.check_updates_now)
+            btn_check.pack(pady=(20, 5))
+
+            btn_restore = ctk.CTkButton(self.root, text="Restore Defaults", command=self.restore_defaults)
+            btn_restore.pack(pady=5)
+
+            btn_save = ctk.CTkButton(self.root, text="Save Changes", command=self.save)
+            btn_save.pack(pady=10)
 
             self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-
             self.root.mainloop()
         finally:
             self.opening_lock.release()
@@ -132,13 +208,15 @@ class SettingsWindow:
         self.autostart_var.set(True)
         self.sound_var.set(True)
         self.theme_var.set("light")
+        self.check_updates_var.set(True)
 
     def save(self):
         global settings
         settings = {
             "autostart": self.autostart_var.get(),
             "sound": self.sound_var.get(),
-            "theme": self.theme_var.get()
+            "theme": self.theme_var.get(),
+            "check_updates": self.check_updates_var.get()
         }
         save_settings(settings)
         add_to_startup(settings["autostart"])
@@ -148,6 +226,8 @@ class SettingsWindow:
     def on_close(self):
         self.root.withdraw()
 
+    def check_updates_now(self):
+        threading.Thread(target=lambda: check_for_updates(show_window_if_update=True), daemon=True).start()
 
 class TrayIcon:
     def __init__(self):
@@ -193,7 +273,9 @@ class TrayIcon:
             self.quit_app()
 
 def main():
-    ctk.set_appearance_mode(settings.get("theme", "light"))  
+    ctk.set_appearance_mode(settings.get("theme", "light"))
+    
+    threading.Thread(target=lambda: check_for_updates(show_window_if_update=True), daemon=True).start()
     tray = TrayIcon()
     tray.run()
 
