@@ -193,7 +193,7 @@ class TrayIcon:
             self.quit_app()
 
 def main():
-    ctk.set_appearance_mode(settings.get("theme", "light"))  # применяем тему при старте
+    ctk.set_appearance_mode(settings.get("theme", "light"))  
     tray = TrayIcon()
     tray.run()
 
