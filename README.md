@@ -13,7 +13,7 @@ It offers a simple and user-friendly interface to empty the recycle bin, open it
   - Autostart with Windows  
   - Sound notification on emptying  
   - Light and Dark themes    
-- 🔄 Auto-check for updates (optional)
+- 🔄 Auto-check for updates
 
 ---
 
