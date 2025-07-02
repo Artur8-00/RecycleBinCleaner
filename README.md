@@ -44,7 +44,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## 💻 Author
+## 💻 Author 
 
 **SurNCP**  
 Year: 2025
