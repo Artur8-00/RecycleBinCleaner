@@ -12,8 +12,7 @@ It allows you to empty the recycle bin, open it, and configure settings like aut
 - ⚙️ Settings window with options:
   - Autostart with Windows  
   - Sound notification on emptying  
-  - Light and Dark themes  
-- ℹ️ "About" window with version and author info  
+  - Light and Dark themes    
 - 🔄 Auto-check for updates (optional)
 
 ---
