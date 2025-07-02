@@ -1,7 +1,7 @@
 # RecycleBinCleaner
 
 **RecycleBinCleaner** is a lightweight Windows utility that places a tray icon for quick and easy access to the Recycle Bin.  
-It allows you to empty the recycle bin, open it, and configure settings like autostart, sound notifications, and theme (light/dark).
+It allows you to empty the recycle bin, open it, and configure settings.
 
 ---
 
